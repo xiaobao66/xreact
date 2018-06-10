@@ -9,6 +9,11 @@ const numberMap = {
     "[object Array]": 7
 };
 
+let options = {
+    async: false,
+    dirtyComponent: {}
+};
+
 function typeNumber (data) {
     if (data === null) {
         return 1;
@@ -25,11 +30,37 @@ function typeNumber (data) {
  * @param name
  * @returns {boolean}
  */
-function isEventName(name) {
+function isEventName (name) {
     return /^on[A-Z]/.test(name);
+}
+
+/**
+ * 对比新旧节点
+ * @param pre
+ * @param next
+ * @returns {boolean}
+ */
+function isSameVnode (pre, next) {
+    if (pre.type === next.type && pre.key === next.key) {
+        return true
+    }
+    return false
+}
+
+function mapKeyToIndex (old) {
+    let vnodeMap = {};
+    old.forEach((el, index) => {
+        if (el.key) {
+            vnodeMap[el.key] = index
+        }
+    })
+    return vnodeMap
 }
 
 export {
     typeNumber,
-    isEventName
+    isEventName,
+    options,
+    isSameVnode,
+    mapKeyToIndex
 }

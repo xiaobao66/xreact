@@ -1,6 +1,7 @@
-import { mapProps } from './mapProps'
-import { typeNumber } from './utils'
+import { mapProps, updateProps } from './mapProps'
+import { typeNumber, isSameVnode, mapKeyToIndex } from './utils'
 import { Vnode as VnodeClass, flattenChildren } from './createElement'
+import { disposeVnode } from './dispose'
 
 /**
  * ReactDOM.render函数入口
@@ -49,6 +50,12 @@ function renderByxreact (Vnode, container) {
     return domNode;
 }
 
+/**
+ * 挂载children
+ * @param childrenVnode
+ * @param parentDom
+ * @returns {*}
+ */
 function mountChildren (childrenVnode, parentDom) {
     const childType = typeNumber(childrenVnode);
     let flattenChildList = childrenVnode;
@@ -150,6 +157,196 @@ function mountNativeElement (Vnode, container) {
     const domNode = renderByxreact(Vnode, container);
     Vnode._hostNode = domNode;
     return domNode
+}
+
+export function update (oldVnode, newVnode, parentDom) {
+    newVnode._hostNode = oldVnode._hostNode;
+
+    if (oldVnode.type === newVnode.type) {
+        if (typeNumber(oldVnode) === 7) {
+            newVnode = updateChild(oldVnode, newVnode, parentDom);
+            newVnode._hostNode = newVnode[0]._hostNode
+        }
+
+        if (oldVnode.type === '#text') {
+            // 文本节点
+            updateText(oldVnode, newVnode);
+            return newVnode
+        }
+
+        if (typeNumber(oldVnode.type) === 4) {
+            // 原生节点
+            updateProps(oldVnode.props, newVnode.props, newVnode._hostNode);
+            // 更新newVnode的子节点
+            newVnode.props.children = updateChild(oldVnode.props.children, newVnode.props.children, oldVnode._hostNode)
+        }
+
+        if (typeNumber(oldVnode.type) === 5) {
+            // 非原生，虚拟组件
+            updateComponent(oldVnode, newVnode, parentDom)
+        }
+    } else {
+        if (typeNumber(newVnode) === 7) {
+            newVnode.forEach((newvnode, index) => {
+                const dom = renderByxreact(newvnode, parentDom);
+                if (index === 0) {
+                    newVnode._hostNode = dom
+                }
+                if (newvnode._hostNode) {
+                    parentDom.insertBefore(dom, oldVnode._hostNode)
+                } else {
+                    parentDom.appendChild(dom);
+                    newvnode._hostNode = dom
+                }
+            });
+            disposeVnode(oldVnode);
+            return newVnode
+        }
+        const dom = renderByxreact(newVnode, parentDom);
+        if (typeNumber(newVnode.type) !== 5) {
+            newVnode._hostNode = dom;
+
+            if (oldVnode._hostNode) {
+                parentDom.insertBefore(dom, oldVnode._hostNode);
+                disposeVnode(oldVnode)
+            } else {
+                parentDom.appendChild(dom)
+            }
+        }
+    }
+
+    return newVnode
+}
+
+function updateChild (oldVnodeChildren, newVnodeChildren, parentDom) {
+    newVnodeChildren = flattenChildren(newVnodeChildren);
+    oldVnodeChildren = oldVnodeChildren || [];
+    if (typeNumber(oldVnodeChildren) !== 7) oldVnodeChildren = [oldVnodeChildren];
+    if (typeNumber(newVnodeChildren) !== 7) newVnodeChildren = [newVnodeChildren];
+
+    let oldLength = oldVnodeChildren.length,
+        newLength = newVnodeChildren.length,
+        oldStartIndex = 0,
+        newStartIndex = 0,
+        oldEndIndex = oldLength - 1,
+        newEndIndex = newLength - 1,
+        oldStartVnode = oldVnodeChildren[0],
+        newStartVnode = newVnodeChildren[0],
+        oldEndVnode = oldVnodeChildren[oldEndIndex],
+        newEndVnode = newVnodeChildren[newEndIndex],
+        vnodeMap;
+
+    if (newLength > 0 && oldLength === 0) {
+        newVnodeChildren.forEach((newVnode, index) => {
+            renderByxreact(newVnode, parentDom);
+            newVnodeChildren[index] = newVnode
+        });
+
+        return newVnodeChildren
+    }
+
+    if (newLength === 0 && oldLength > 0) {
+        oldVnodeChildren.forEach(oldVnode => {
+            disposeVnode(oldVnode)
+        });
+
+        return newVnodeChildren
+    }
+
+    while (oldStartIndex <= oldEndIndex && newStartIndex <= newEndIndex) {
+        if (oldStartVnode === undefined || oldStartVnode === null) {
+            oldStartVnode = oldVnodeChildren[++oldStartIndex];
+        } else if (oldEndVnode === undefined || oldEndVnode === null) {
+            oldEndVnode = oldVnodeChildren[--oldEndIndex];
+        } else if (newStartVnode === undefined || newStartVnode === null) {
+            newStartVnode = newVnodeChildren[++newStartIndex];
+        } else if (newEndVnode === undefined || newEndVnode === null) {
+            newEndVnode = newVnodeChildren[--newEndIndex];
+        }
+        if (isSameVnode(oldStartVnode, newStartVnode)) {
+            update(oldStartVnode, newStartVnode, parentDom);
+            oldStartVnode = oldVnodeChildren[++oldStartIndex];
+            newStartVnode = newVnodeChildren[++newStartIndex];
+        } else if (isSameVnode(oldEndVnode, newEndVnode)) {
+            update(oldEndVnode, newEndVnode, parentDom);
+            oldEndVnode = oldVnodeChildren[--oldEndIndex];
+            newEndVnode = newVnodeChildren[--newEndIndex]
+        } else if (isSameVnode(oldStartVnode, newEndVnode)) {
+            const dom = oldStartVnode._hostNode;
+            parentDom.insertBefore(dom, oldEndVnode._hostNode.nextSibling);
+            update(oldStartVnode, newEndVnode, parentDom);
+            oldStartVnode = oldVnodeChildren[++oldStartIndex];
+            newEndVnode = newVnodeChildren[--newEndIndex];
+        } else if (isSameVnode(oldEndVnode, newStartVnode)) {
+            const dom = oldEndVnode._hostNode;
+            parentDom.insertBefore(dom, oldStartVnode._hostNode);
+            update(oldEndVnode, newStartVnode, parentDom);
+            oldEndVnode = oldVnodeChildren[--oldEndIndex];
+            newStartVnode = newVnodeChildren[++newStartIndex];
+        } else {
+            if (vnodeMap === undefined) {
+                vnodeMap = mapKeyToIndex(oldVnodeChildren)
+            }
+            let indexInOld = vnodeMap[newStartVnode.key]
+
+            if (indexInOld === undefined) {
+                if (newStartVnode.type === '#text') {
+                    update(oldStartVnode, newStartVnode, parentDom)
+                } else {
+                    let _parentDom = parentDom;
+                    if (parentDom.nodeName === '#text') {
+                        _parentDom = parentDom.parentNode;
+                    }
+                    if (oldStartVnode.type === '#text') {
+                        _parentDom = parentDom.parentNode;
+                    }
+                    let newElm = renderByxreact(newStartVnode, _parentDom);
+                    _parentDom.insertBefore(newElm, oldStartVnode._hostNode)
+                }
+
+                newStartVnode = newVnodeChildren[++newStartIndex]
+            } else {
+                const moveVnode = oldVnodeChildren[indexInOld];
+                update(moveVnode, newStartVnode, parentDom);
+                parentDom.insertBefore(moveVnode._hostNode, oldStartVnode._hostNode);
+                vnodeMap[indexInOld] = undefined;
+                newStartVnode = newVnodeChildren[++newStartIndex];
+            }
+        }
+        if (oldStartIndex > oldEndIndex) {
+            for (; newStartIndex <= newEndIndex; newStartIndex++) {
+                if (newVnodeChildren[newStartIndex]) {
+                    let newDomNode = renderByxreact(newVnodeChildren[newStartIndex], parentDom);
+                    parentDom.appendChild(newDomNode);
+                    newVnodeChildren[newStartIndex]._hostNode = newDomNode
+                }
+            }
+        } else if (newStartIndex > newEndIndex) {
+            for (; oldStartIndex <= oldEndIndex; oldStartIndex++) {
+                if (oldVnodeChildren[oldStartIndex]) {
+                    let removeNode = oldVnodeChildren[oldStartIndex];
+                    if (typeNumber(removeNode._hostNode) <= 1) {
+                        //证明这个节点已经被移除；
+                        continue
+                    }
+                    disposeVnode(removeNode)
+                }
+            }
+        }
+    }
+
+    return newVnodeChildren;
+}
+
+function updateText (oldVnode, newVnode) {
+    const textDom = oldVnode._hostNode;
+    if (oldVnode.props !== newVnode.props) {
+        textDom.nodeValue = newVnode.props
+    }
+}
+
+function updateComponent (oldVnode, newVnode, parentDom) {
+
 }
 
 export const render = renderByxreact;

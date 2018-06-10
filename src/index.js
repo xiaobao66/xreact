@@ -1,6 +1,6 @@
 import React from 'react'
 import ReactDOM from 'react-dom'
-import App from './App'
+// import App from './App'
 
 // class App extends React.Component {
 //     constructor (props) {
@@ -10,7 +10,7 @@ import App from './App'
 //             color: ''
 //         };
 //
-//         setInterval(() => {
+//         setTimeout(() => {
 //             const color = ['#eee', 'black', 'red', 'green', 'blue', 'grey', '#133234', '#123213', '222345', '998232']
 //             const rand = parseInt(Math.min(10, Math.random() * 10))
 //             this.setState({
@@ -33,7 +33,41 @@ import App from './App'
 //     }
 // }
 
+class App extends React.Component {
+    constructor (props) {
+        super(props);
+
+        this.state = {
+            change: false
+        };
+
+        setTimeout(() => {
+            this.setState({
+                change: true
+            })
+        }, 2000)
+    }
+
+    render () {
+        if (this.state.change) {
+            return (
+                <div>
+                    <p>hello</p>
+                    <span>world</span>
+                </div>
+            )
+        } else {
+            return (
+                <div>
+                    <span>world</span>
+                    <span>hello</span>
+                </div>
+            )
+        }
+    }
+}
+
 ReactDOM.render(
     <App className={'app-container'} name={'xiaobao'}></App>,
     document.getElementById('app')
-)
+);

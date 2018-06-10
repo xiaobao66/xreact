@@ -55,7 +55,28 @@ const mappingStrategy = {
     }
 };
 
+function updateProps (oldProps, newProps, hostNode) {
+    for (let name in oldProps) {
+        //修改原来有的属性
+        if (name === 'children') continue;
+
+        if (oldProps[name] !== newProps[name]) {
+            mapProps(hostNode, newProps)
+        }
+    }
+
+    let restProps = {};
+    for (let newName in newProps) {
+        //新增原来没有的属性
+        if (oldProps[newName] === undefined) {
+            restProps[newName] = newProps[newName]
+        }
+    }
+    mapProps(hostNode, restProps)
+}
+
 export {
     mapProps,
-    mappingStrategy
+    mappingStrategy,
+    updateProps
 }
