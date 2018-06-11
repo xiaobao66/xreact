@@ -1,7 +1,16 @@
 import { mapProps, updateProps } from './mapProps'
-import { typeNumber, isSameVnode, mapKeyToIndex } from './utils'
+import { typeNumber, isSameVnode, mapKeyToIndex, options } from './utils'
 import { Vnode as VnodeClass, flattenChildren } from './createElement'
 import { disposeVnode } from './dispose'
+import { COM_LIFE_CYCLE } from './component'
+
+function instanceProps (componentVnode) {
+    return {
+        oldState: componentVnode._instance.state,
+        oldProps: componentVnode._instance.props,
+        oldVnode: componentVnode._instance.Vnode
+    }
+}
 
 /**
  * ReactDOM.render函数入口
@@ -183,7 +192,10 @@ export function update (oldVnode, newVnode, parentDom) {
 
         if (typeNumber(oldVnode.type) === 5) {
             // 非原生，虚拟组件
-            updateComponent(oldVnode, newVnode, parentDom)
+            updateComponent(oldVnode, newVnode, parentDom);
+            newVnode._instance = oldVnode._instance;
+            newVnode.key = oldVnode.key;
+            newVnode.ref = oldVnode.ref;
         }
     } else {
         if (typeNumber(newVnode) === 7) {
@@ -345,8 +357,75 @@ function updateText (oldVnode, newVnode) {
     }
 }
 
-function updateComponent (oldVnode, newVnode, parentDom) {
+function updateComponent (oldComponentVnode, newComponentVnode, parentDom) {
+    const {
+        oldState,
+        oldProps,
+        oldVnode
+    } = instanceProps(oldComponentVnode)
 
+    const newProps = newComponentVnode.props;
+
+    // 更新原来组件信息
+    oldComponentVnode._instance.props = newProps;
+    oldComponentVnode._instance.lifeCycle = COM_LIFE_CYCLE.UPDATING;
+
+    if (oldComponentVnode._instance.ComponentWillReceiveProps) {
+        oldComponentVnode._instance.ComponentWillReceiveProps(newProps);
+        let mergedState = oldComponentVnode._instance.state;
+        oldComponentVnode._instance._pendingState.forEach(partialState => {
+            if (typeNumber(partialState.partialNewState) === 5) {
+                mergedState = Object.assign({}, mergedState, partialState.partialNewState(oldState, newProps))
+            } else {
+                mergedState = {
+                    ...mergedState,
+                    ...partialState.partialNewState
+                }
+            }
+        });
+        oldComponentVnode._instance.state = mergedState;
+    }
+
+    if (oldComponentVnode._instance.shouldComponentUpdate) {
+        const shouldUpdate = oldComponentVnode._instance.shouldComponentUpdate(newProps, oldComponentVnode._instance.state);
+        if (!shouldUpdate) {
+            oldComponentVnode._instance.props = newProps;
+        }
+    }
+
+    if (oldComponentVnode._instance.componentWillUpdate) {
+        oldComponentVnode._instance.componentWillUpdate(newProps, oldComponentVnode._instance.state);
+    }
+
+    let newVnode = oldComponentVnode._instance.render();
+    newVnode = newVnode || new VnodeClass('#text', '', null, null);
+    const newVnodeType = typeNumber(newVnode);
+    if (newVnodeType === 3 || newVnodeType === 4) {
+        newVnode = new VnodeClass('#text', newVnode, null, null);
+    }
+
+    const willUpdate = options.dirtyComponent[oldComponentVnode._instance._uniqueId];
+    if (willUpdate) {
+        //如果这个component正好是需要更新的component，那么则更新，然后就将他从map中删除
+        //不然会重复更新
+        delete options.dirtyComponent[oldComponentVnode._instance._uniqueId]
+    }
+
+    let fixedOldVnode = oldVnode ? oldVnode : oldComponentVnode._instance;
+    update(fixedOldVnode, newVnode, oldVnode._hostNode.parentNode);
+    oldComponentVnode._hostNode = newVnode._hostNode;
+    if (oldComponentVnode._instance.Vnode) {
+        oldComponentVnode._instance.Vnode = newVnode;
+    } else {
+        oldComponentVnode._instance = newVnode;
+    }
+
+    if (oldComponentVnode._instance) {
+        if (oldComponentVnode._instance.componentDidUpdate) {
+            oldComponentVnode._instance.componentDidUpdate(oldProps, oldState);
+        }
+        oldComponentVnode._instance.lifeCycle = COM_LIFE_CYCLE.UPDATED;
+    }
 }
 
 export const render = renderByxreact;

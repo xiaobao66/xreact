@@ -134,5 +134,6 @@ class ReactClass {
 }
 
 export {
-    ReactClass
+    ReactClass,
+    COM_LIFE_CYCLE
 }
