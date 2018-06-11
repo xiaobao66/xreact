@@ -112,6 +112,10 @@ function mountComponent (Vnode, container) {
     const instance = new Component(props);
     Vnode._instance = instance;
 
+    if (instance.componentWillMount) {
+        instance.componentWillMount()
+    }
+
     let renderedVnode = instance.render();
     const renderedType = typeNumber(renderedVnode);
 
@@ -139,6 +143,15 @@ function mountComponent (Vnode, container) {
 
     Vnode._hostNode = domNode;
     instance.Vnode._hostNode = domNode;
+
+    if (instance.componentDidMount) {
+        //Mounting变量用于标记组件是否正在挂载
+        //如果正在挂载，则所有的setState全部都要合并
+        instance.lifeCycle = COM_LIFE_CYCLE.MOUNTING;
+        instance.componentDidMount()
+        instance.componentDidMount = null;//防止用户调用
+        instance.lifeCycle = COM_LIFE_CYCLE.MOUNTED;
+    }
 
     return domNode;
 }

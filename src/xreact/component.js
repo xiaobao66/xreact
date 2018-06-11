@@ -129,6 +129,14 @@ class ReactClass {
         this.updateComponent()
     }
 
+    // shouldComponentUpdate() { }
+    componentWillReceiveProps() { }
+    // componentWillUpdate() { }
+    // componentDidUpdate() { }
+    componentWillMount() { }
+    componentDidMount() { }
+    componentWillUnmount() { }
+
     render () {
     }
 }
