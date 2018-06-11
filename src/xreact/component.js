@@ -34,7 +34,7 @@ class ReactClass {
 
         for (let index = 0; index < this._pendingState.length; index++) {
             const item = this._pendingState[index];
-            if (typeNumber(item) === 5) {
+            if (typeNumber(item.partialNewState) === 5) {
                 // setState传入的是函数
                 this.nextState = Object.assign({}, this.nextState, item.partialNewState(this.nextState, this.props))
             } else {
@@ -130,12 +130,19 @@ class ReactClass {
     }
 
     // shouldComponentUpdate() { }
-    componentWillReceiveProps() { }
+    componentWillReceiveProps () {
+    }
+
     // componentWillUpdate() { }
     // componentDidUpdate() { }
-    componentWillMount() { }
-    componentDidMount() { }
-    componentWillUnmount() { }
+    componentWillMount () {
+    }
+
+    componentDidMount () {
+    }
+
+    componentWillUnmount () {
+    }
 
     render () {
     }

@@ -1,4 +1,4 @@
-import { isEventName } from './utils'
+import { isEventName, options } from './utils'
 
 /**
  * 将虚拟节点的属性映射到真实DOM
@@ -30,6 +30,64 @@ function mapProps (domNode, props, Vnode) {
     }
 }
 
+let registedEvent = {};
+
+function addEvent (domNode, fn, eventName) {
+    if (domNode.addEventListener) {
+        domNode.addEventListener(
+            eventName,
+            fn,
+            false
+        );
+
+    } else if (domNode.attachEvent) {
+        domNode.attachEvent("on" + eventName, fn);
+    }
+}
+
+function dispatchEvent (event) {
+    const path = getEventPath(event);
+    options.async = true;
+
+    triggerEventByPath(event, path);
+    //触发event默认以冒泡形式
+    options.async = false;
+    for (let dirty in options.dirtyComponent) {
+        options.dirtyComponent[dirty].updateComponent()
+    }
+    options.dirtyComponent = {}//清空
+}
+
+function getEventPath (event) {
+    let path = [];
+    let begin = event.target;
+
+    while (1) {
+        if (begin._events) {
+            path.push(begin)
+        }
+        begin = begin.parentNode;
+        if (!begin) {
+            break
+        }
+    }
+    return path
+}
+
+function triggerEventByPath (e, path) {
+    const thisEvenType = e.type;
+    for (let i = 0; i < path.length; i++) {
+        const events = path[i]._events;
+        for (let eventName in events) {
+            let fn = events[eventName];
+            if (typeof fn === 'function' && thisEvenType === eventName) {
+
+                fn.call(path[i], e)//触发回调函数默认以冒泡形式
+            }
+        }
+    }
+}
+
 const mappingStrategy = {
     style: function (domNode, style) {
         if (style !== undefined) {
@@ -39,9 +97,15 @@ const mappingStrategy = {
         }
     },
     event: function (domNode, eventCallback, eventName) {
-        /**
-         * Todo 事件处理
-         */
+        let events = domNode._events || {};
+        events[eventName] = eventCallback;
+        domNode._events = events;
+
+        if (!registedEvent[event]) {
+            registedEvent[eventName] = 1;
+
+            addEvent(document, dispatchEvent, eventName)
+        }
     },
     className: function (domNode, className) {
         if (className !== undefined) {

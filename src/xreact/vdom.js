@@ -148,10 +148,12 @@ function mountComponent (Vnode, container) {
         //Mounting变量用于标记组件是否正在挂载
         //如果正在挂载，则所有的setState全部都要合并
         instance.lifeCycle = COM_LIFE_CYCLE.MOUNTING;
-        instance.componentDidMount()
+        instance.componentDidMount();
         instance.componentDidMount = null;//防止用户调用
         instance.lifeCycle = COM_LIFE_CYCLE.MOUNTED;
     }
+
+    instance._updateInLifeCycle();
 
     return domNode;
 }

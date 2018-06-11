@@ -40,30 +40,25 @@ class App extends React.Component {
         this.state = {
             change: false
         };
-
-        setTimeout(() => {
-            this.setState({
-                change: true
-            })
-        }, 2000)
     }
 
+    onChange = () => {
+        this.setState(prevState => ({
+            change: !prevState.change
+        }))
+    };
+
     render () {
-        if (this.state.change) {
-            return (
+        return (
+            <div>
                 <div>
-                    <p>hello</p>
-                    <span>world</span>
+                    {
+                        !this.state.change ? <p>hello world</p> : <p>goodbye</p>
+                    }
                 </div>
-            )
-        } else {
-            return (
-                <div>
-                    <span>world</span>
-                    <span>hello</span>
-                </div>
-            )
-        }
+                <button onClick={this.onChange}>click</button>
+            </div>
+        )
     }
 }
 
