@@ -33,19 +33,73 @@ import ReactDOM from 'react-dom'
 //     }
 // }
 
+class Portal extends React.Component {
+    constructor (props) {
+        super (props);
+
+        this.state = {
+            num: 0
+        }
+    }
+
+    componentWillReceiveProps (nextProps) {
+        console.log(nextProps);
+        console.log(this.props);
+    }
+
+    render () {
+        return (
+            <div>child {this.state.num}</div>
+        )
+    }
+}
+
 class App extends React.Component {
     constructor (props) {
         super(props);
 
         this.state = {
-            change: false
+            change: false,
+            name: 'xiaobaowei',
+            list: [
+                <p key={1}>zhang</p>,
+                <a href="#" key={2}>li</a>,
+                <span key={3}>wang</span>,
+                <div key={4}>qian</div>
+            ]
         };
+    }
+
+    componentWillMount () {
+        this.setState({
+            name: 'xiaobao'
+        })
+    }
+
+    componentDidMount () {
+        this.setState({
+            name: 'weixiaobao'
+        })
+    }
+
+    componentWillUpdate () {
+        console.log('componentWillUpdate')
     }
 
     onChange = () => {
         this.setState(prevState => ({
             change: !prevState.change
         }))
+
+        // this.setState({
+        //     list: [
+        //         <a key={1} href="#">li</a>,
+        //         <p key={2}>zhang</p>,
+        //         <div key={3}>qian</div>,
+        //         <span key={4}>wang</span>
+        //
+        //     ]
+        // })
     };
 
     render () {
@@ -53,9 +107,10 @@ class App extends React.Component {
             <div>
                 <div>
                     {
-                        !this.state.change ? <p>hello world</p> : <p>goodbye</p>
+                        !this.state.change ? this.state.list.map(item => item) : ''
                     }
                 </div>
+                <Portal change={this.state.change}></Portal>
                 <button onClick={this.onChange}>click</button>
             </div>
         )

@@ -24,7 +24,6 @@ function renderByxreact (Vnode, container) {
         props
     } = Vnode;
 
-    if (!type) return;
     const { children } = props;
 
     let domNode;
@@ -71,7 +70,7 @@ function mountChildren (childrenVnode, parentDom) {
 
     if (childrenVnode === undefined) {
         flattenChildList = flattenChildren(childrenVnode)
-    } else if (childType === 8 && childrenVnode !== undefined) {
+    } else if (childType === 8) {
         // Vnode
         flattenChildList = flattenChildren(childrenVnode);
         if (typeNumber(childrenVnode.type) === 5) {
@@ -112,6 +111,7 @@ function mountComponent (Vnode, container) {
     const instance = new Component(props);
     Vnode._instance = instance;
 
+    // 生命周期
     if (instance.componentWillMount) {
         instance.componentWillMount()
     }
@@ -119,10 +119,10 @@ function mountComponent (Vnode, container) {
     let renderedVnode = instance.render();
     const renderedType = typeNumber(renderedVnode);
 
-    // 虚拟组件渲染出来的是数组，则递归挂载children
-    if (renderedType === 7) {
-        renderedVnode = mountChildren(renderedVnode, container)
-    }
+    /**TODO
+     * 支持直接返回数组
+     */
+
     if (renderedType === 3 || renderedType === 4) {
         renderedVnode = new VnodeClass('#text', renderedVnode, null, null)
     }
@@ -130,16 +130,13 @@ function mountComponent (Vnode, container) {
     if (renderedVnode === undefined) {
         return
     }
+
+    // 如果什么都没有，则返回文本节点
     renderedVnode = renderedVnode || new VnodeClass('#text', '', null, null);
     renderedVnode.key = key || null;
     instance.Vnode = renderedVnode;
 
-    let domNode = null;
-    if (renderedType !== 7) {
-        domNode = renderByxreact(renderedVnode, container);
-    } else {
-        domNode = renderedVnode[0]._hostNode
-    }
+    let domNode = renderByxreact(renderedVnode, container);
 
     Vnode._hostNode = domNode;
     instance.Vnode._hostNode = domNode;
@@ -187,10 +184,9 @@ export function update (oldVnode, newVnode, parentDom) {
     newVnode._hostNode = oldVnode._hostNode;
 
     if (oldVnode.type === newVnode.type) {
-        if (typeNumber(oldVnode) === 7) {
-            newVnode = updateChild(oldVnode, newVnode, parentDom);
-            newVnode._hostNode = newVnode[0]._hostNode
-        }
+        /**TODO
+         * 支持节点是数组
+         */
 
         if (oldVnode.type === '#text') {
             // 文本节点
@@ -200,45 +196,27 @@ export function update (oldVnode, newVnode, parentDom) {
 
         if (typeNumber(oldVnode.type) === 4) {
             // 原生节点
-            updateProps(oldVnode.props, newVnode.props, newVnode._hostNode);
+            updateProps(oldVnode.props, newVnode.props, newVnode);
             // 更新newVnode的子节点
-            newVnode.props.children = updateChild(oldVnode.props.children, newVnode.props.children, oldVnode._hostNode)
+            newVnode.props.children = updateChild(oldVnode.props.children, newVnode.props.children, newVnode._hostNode)
         }
 
         if (typeNumber(oldVnode.type) === 5) {
-            // 非原生，虚拟组件
+            // 组件
             updateComponent(oldVnode, newVnode, parentDom);
             newVnode._instance = oldVnode._instance;
             newVnode.key = oldVnode.key;
             newVnode.ref = oldVnode.ref;
         }
     } else {
-        if (typeNumber(newVnode) === 7) {
-            newVnode.forEach((newvnode, index) => {
-                const dom = renderByxreact(newvnode, parentDom);
-                if (index === 0) {
-                    newVnode._hostNode = dom
-                }
-                if (newvnode._hostNode) {
-                    parentDom.insertBefore(dom, oldVnode._hostNode)
-                } else {
-                    parentDom.appendChild(dom);
-                    newvnode._hostNode = dom
-                }
-            });
-            disposeVnode(oldVnode);
-            return newVnode
-        }
+        /**TODO
+         * 支持直接返回数组
+         */
         const dom = renderByxreact(newVnode, parentDom);
         if (typeNumber(newVnode.type) !== 5) {
             newVnode._hostNode = dom;
-
-            if (oldVnode._hostNode) {
-                parentDom.insertBefore(dom, oldVnode._hostNode);
-                disposeVnode(oldVnode)
-            } else {
-                parentDom.appendChild(dom)
-            }
+            parentDom.insertBefore(dom, oldVnode._hostNode);
+            disposeVnode(oldVnode)
         }
     }
 
@@ -314,28 +292,16 @@ function updateChild (oldVnodeChildren, newVnodeChildren, parentDom) {
             if (vnodeMap === undefined) {
                 vnodeMap = mapKeyToIndex(oldVnodeChildren)
             }
-            let indexInOld = vnodeMap[newStartVnode.key]
+            let indexInOld = vnodeMap[newStartVnode.key];
 
             if (indexInOld === undefined) {
-                if (newStartVnode.type === '#text') {
-                    update(oldStartVnode, newStartVnode, parentDom)
-                } else {
-                    let _parentDom = parentDom;
-                    if (parentDom.nodeName === '#text') {
-                        _parentDom = parentDom.parentNode;
-                    }
-                    if (oldStartVnode.type === '#text') {
-                        _parentDom = parentDom.parentNode;
-                    }
-                    let newElm = renderByxreact(newStartVnode, _parentDom);
-                    _parentDom.insertBefore(newElm, oldStartVnode._hostNode)
-                }
-
+                let newElm = renderByxreact(newStartVnode, parentDom);
+                parentDom.insertBefore(newElm, oldStartVnode._hostNode);
                 newStartVnode = newVnodeChildren[++newStartIndex]
             } else {
                 const moveVnode = oldVnodeChildren[indexInOld];
                 update(moveVnode, newStartVnode, parentDom);
-                parentDom.insertBefore(moveVnode._hostNode, oldStartVnode._hostNode);
+                parentDom.insertBefore(newStartVnode._hostNode, oldStartVnode._hostNode);
                 vnodeMap[indexInOld] = undefined;
                 newStartVnode = newVnodeChildren[++newStartIndex];
             }
@@ -377,28 +343,25 @@ function updateComponent (oldComponentVnode, newComponentVnode, parentDom) {
         oldState,
         oldProps,
         oldVnode
-    } = instanceProps(oldComponentVnode)
+    } = instanceProps(oldComponentVnode);
 
     const newProps = newComponentVnode.props;
+    let newState = oldComponentVnode._instance.state;
 
-    // 更新原来组件信息
-    oldComponentVnode._instance.props = newProps;
     oldComponentVnode._instance.lifeCycle = COM_LIFE_CYCLE.UPDATING;
 
-    if (oldComponentVnode._instance.ComponentWillReceiveProps) {
-        oldComponentVnode._instance.ComponentWillReceiveProps(newProps);
-        let mergedState = oldComponentVnode._instance.state;
+    if (oldComponentVnode._instance.componentWillReceiveProps) {
+        oldComponentVnode._instance.componentWillReceiveProps(newProps);
         oldComponentVnode._instance._pendingState.forEach(partialState => {
             if (typeNumber(partialState.partialNewState) === 5) {
-                mergedState = Object.assign({}, mergedState, partialState.partialNewState(oldState, newProps))
+                newState = Object.assign({}, newState, partialState.partialNewState(oldState, newProps))
             } else {
-                mergedState = {
-                    ...mergedState,
+                newState = {
+                    ...newState,
                     ...partialState.partialNewState
                 }
             }
         });
-        oldComponentVnode._instance.state = mergedState;
     }
 
     if (oldComponentVnode._instance.shouldComponentUpdate) {
@@ -412,6 +375,8 @@ function updateComponent (oldComponentVnode, newComponentVnode, parentDom) {
         oldComponentVnode._instance.componentWillUpdate(newProps, oldComponentVnode._instance.state);
     }
 
+    oldComponentVnode._instance.props = newProps;
+    oldComponentVnode._instance.state = newState;
     let newVnode = oldComponentVnode._instance.render();
     newVnode = newVnode || new VnodeClass('#text', '', null, null);
     const newVnodeType = typeNumber(newVnode);
@@ -426,21 +391,14 @@ function updateComponent (oldComponentVnode, newComponentVnode, parentDom) {
         delete options.dirtyComponent[oldComponentVnode._instance._uniqueId]
     }
 
-    let fixedOldVnode = oldVnode ? oldVnode : oldComponentVnode._instance;
-    update(fixedOldVnode, newVnode, oldVnode._hostNode.parentNode);
+    update(oldVnode, newVnode, oldVnode._hostNode.parentNode);
     oldComponentVnode._hostNode = newVnode._hostNode;
-    if (oldComponentVnode._instance.Vnode) {
-        oldComponentVnode._instance.Vnode = newVnode;
-    } else {
-        oldComponentVnode._instance = newVnode;
-    }
+    oldComponentVnode._instance.Vnode = newVnode;
 
-    if (oldComponentVnode._instance) {
-        if (oldComponentVnode._instance.componentDidUpdate) {
-            oldComponentVnode._instance.componentDidUpdate(oldProps, oldState);
-        }
-        oldComponentVnode._instance.lifeCycle = COM_LIFE_CYCLE.UPDATED;
+    if (oldComponentVnode._instance.componentDidUpdate) {
+        oldComponentVnode._instance.componentDidUpdate(oldProps, oldState);
     }
+    oldComponentVnode._instance.lifeCycle = COM_LIFE_CYCLE.UPDATED;
 }
 
 export const render = renderByxreact;

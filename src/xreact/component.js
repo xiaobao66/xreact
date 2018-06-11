@@ -81,6 +81,8 @@ class ReactClass {
             // 清空合并队列
             this.stateMergeQueue = [];
             this.updateComponent()
+        } else {
+            this.updateComponent()
         }
     }
 
@@ -123,10 +125,10 @@ class ReactClass {
 
                 return
             }
-        }
 
-        // 不在生命周期中调用
-        this.updateComponent()
+            // 不在生命周期中调用
+            this.updateComponent()
+        }
     }
 
     // shouldComponentUpdate() { }

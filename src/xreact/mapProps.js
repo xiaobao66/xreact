@@ -48,9 +48,8 @@ function addEvent (domNode, fn, eventName) {
 function dispatchEvent (event) {
     const path = getEventPath(event);
     options.async = true;
-
+    // 触发event默认以冒泡形式
     triggerEventByPath(event, path);
-    //触发event默认以冒泡形式
     options.async = false;
     for (let dirty in options.dirtyComponent) {
         options.dirtyComponent[dirty].updateComponent()
@@ -119,13 +118,13 @@ const mappingStrategy = {
     }
 };
 
-function updateProps (oldProps, newProps, hostNode) {
+function updateProps (oldProps, newProps, Vnode) {
     for (let name in oldProps) {
         //修改原来有的属性
         if (name === 'children') continue;
 
         if (oldProps[name] !== newProps[name]) {
-            mapProps(hostNode, newProps)
+            mapProps(Vnode._hostNode, newProps, Vnode)
         }
     }
 
@@ -136,7 +135,7 @@ function updateProps (oldProps, newProps, hostNode) {
             restProps[newName] = newProps[newName]
         }
     }
-    mapProps(hostNode, restProps)
+    mapProps(Vnode._hostNode, restProps, Vnode)
 }
 
 export {

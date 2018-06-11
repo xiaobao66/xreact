@@ -53,7 +53,7 @@ function mapKeyToIndex (old) {
         if (el.key) {
             vnodeMap[el.key] = index
         }
-    })
+    });
     return vnodeMap
 }
 

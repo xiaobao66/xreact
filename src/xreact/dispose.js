@@ -2,10 +2,10 @@ import { typeNumber } from './utils'
 
 export function disposeVnode (Vnode) {
     const { type, props } = Vnode;
-    if (typeNumber(Vnode) === 7) {
-        disposeChildVnode(Vnode);
-        return;
-    }
+
+    /**TODO
+     * 支持Vnode是数组
+     */
 
     if (!type) return;
 
@@ -17,12 +17,8 @@ export function disposeVnode (Vnode) {
     if (props.children) {
         disposeChildVnode(props.children)
     }
-    if (Vnode._hostNode) {
-        const parent = Vnode._hostNode.parentNode;
-        if (parent) {
-            parent.removeChild(Vnode._hostNode)
-        }
-    }
+    const parent = Vnode._hostNode.parentNode;
+    parent.removeChild(Vnode._hostNode)
     Vnode._hostNode = null
 }
 
