@@ -9,6 +9,7 @@ const COM_LIFE_CYCLE = {
     UPDATING: 2, // 节点正在更新
     UPDATED: 3, // 节点已经更新
     MOUNTING: 4, // 节点正在挂载
+    PROPS_UPDATING: 5, // 节点更新props
 };
 
 let uniqueId = 0;
@@ -81,8 +82,6 @@ class ReactClass {
             // 清空合并队列
             this.stateMergeQueue = [];
             this.updateComponent()
-        } else {
-            this.updateComponent()
         }
     }
 
@@ -105,8 +104,8 @@ class ReactClass {
         if (this.lifeCycle === COM_LIFE_CYCLE.CREATE) {
             // 组件创建期不做处理
         } else {
-            if (this.lifeCycle === COM_LIFE_CYCLE.UPDATING) {
-                // 组件更新阶段
+            if (this.lifeCycle === COM_LIFE_CYCLE.PROPS_UPDATING) {
+                // 组件更新props阶段
                 return
             }
 

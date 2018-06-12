@@ -35,7 +35,7 @@ import ReactDOM from 'react-dom'
 
 class Portal extends React.Component {
     constructor (props) {
-        super (props);
+        super(props);
 
         this.state = {
             num: 0
@@ -47,9 +47,29 @@ class Portal extends React.Component {
         console.log(this.props);
     }
 
+    // componentWillUpdate () {
+    //     if (this.state.num < 10) {
+    //         this.setState({
+    //             num: this.state.num + 1
+    //         })
+    //     }
+    // }
+
+    onChangeNum = () => {
+        this.setState(prevState => ({
+            num: prevState.num + 1
+        }));
+        // this.setState(prevState => ({
+        //     num: prevState.num + 1
+        // }));
+    };
+
     render () {
         return (
-            <div>child {this.state.num}</div>
+            <div>
+                <p>child {this.props.name} {this.state.num}</p>
+                <button onClick={this.onChangeNum}>child click</button>
+            </div>
         )
     }
 }
@@ -77,9 +97,9 @@ class App extends React.Component {
     }
 
     componentDidMount () {
-        this.setState({
-            name: 'weixiaobao'
-        })
+        // this.setState({
+        //     name: 'weixiaobao'
+        // })
     }
 
     componentWillUpdate () {
@@ -110,7 +130,7 @@ class App extends React.Component {
                         !this.state.change ? this.state.list.map(item => item) : ''
                     }
                 </div>
-                <Portal change={this.state.change}></Portal>
+                <Portal change={this.state.change} name={this.state.name}></Portal>
                 <button onClick={this.onChange}>click</button>
             </div>
         )

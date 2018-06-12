@@ -114,6 +114,18 @@ function mountComponent (Vnode, container) {
     // 生命周期
     if (instance.componentWillMount) {
         instance.componentWillMount()
+        let newState = instance.state;
+        instance._pendingState.forEach(partialState => {
+            if (typeNumber(partialState.partialNewState) === 5) {
+                newState = Object.assign({}, newState, partialState.partialNewState(oldState, newProps))
+            } else {
+                newState = {
+                    ...newState,
+                    ...partialState.partialNewState
+                }
+            }
+        });
+        instance.state = newState;
     }
 
     let renderedVnode = instance.render();
@@ -348,7 +360,7 @@ function updateComponent (oldComponentVnode, newComponentVnode, parentDom) {
     const newProps = newComponentVnode.props;
     let newState = oldComponentVnode._instance.state;
 
-    oldComponentVnode._instance.lifeCycle = COM_LIFE_CYCLE.UPDATING;
+    oldComponentVnode._instance.lifeCycle = COM_LIFE_CYCLE.PROPS_UPDATING;
 
     if (oldComponentVnode._instance.componentWillReceiveProps) {
         oldComponentVnode._instance.componentWillReceiveProps(newProps);
@@ -364,6 +376,8 @@ function updateComponent (oldComponentVnode, newComponentVnode, parentDom) {
         });
     }
 
+    oldComponentVnode._instance.lifeCycle = COM_LIFE_CYCLE.UPDATING;
+
     if (oldComponentVnode._instance.shouldComponentUpdate) {
         const shouldUpdate = oldComponentVnode._instance.shouldComponentUpdate(newProps, oldComponentVnode._instance.state);
         if (!shouldUpdate) {
@@ -372,7 +386,7 @@ function updateComponent (oldComponentVnode, newComponentVnode, parentDom) {
     }
 
     if (oldComponentVnode._instance.componentWillUpdate) {
-        oldComponentVnode._instance.componentWillUpdate(newProps, oldComponentVnode._instance.state);
+        oldComponentVnode._instance.componentWillUpdate(newProps, newState);
     }
 
     oldComponentVnode._instance.props = newProps;
@@ -394,11 +408,11 @@ function updateComponent (oldComponentVnode, newComponentVnode, parentDom) {
     update(oldVnode, newVnode, oldVnode._hostNode.parentNode);
     oldComponentVnode._hostNode = newVnode._hostNode;
     oldComponentVnode._instance.Vnode = newVnode;
+    oldComponentVnode._instance.lifeCycle = COM_LIFE_CYCLE.UPDATED;
 
     if (oldComponentVnode._instance.componentDidUpdate) {
         oldComponentVnode._instance.componentDidUpdate(oldProps, oldState);
     }
-    oldComponentVnode._instance.lifeCycle = COM_LIFE_CYCLE.UPDATED;
 }
 
 export const render = renderByxreact;
