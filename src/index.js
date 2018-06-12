@@ -102,13 +102,13 @@ class App extends React.Component {
         // })
     }
 
-    shouldComponentUpdate(nextProps, nextState) {
-        if (nextState.change) {
-            return false
-        } else {
-            return true
-        }
-    }
+    // shouldComponentUpdate(nextProps, nextState) {
+    //     if (nextState.change) {
+    //         return false
+    //     } else {
+    //         return true
+    //     }
+    // }
 
     componentWillUpdate () {
         console.log('componentWillUpdate')
@@ -130,6 +130,13 @@ class App extends React.Component {
         // })
     };
 
+    onChangeStateDirectly = () => {
+        this.state = {
+            ...this.state,
+            name: 'weixiaobao'
+        }
+    };
+
     render () {
         return (
             <div>
@@ -140,6 +147,7 @@ class App extends React.Component {
                 </div>
                 <Portal change={this.state.change} name={this.state.name}></Portal>
                 <button onClick={this.onChange}>click</button>
+                <button onClick={this.onChangeStateDirectly}>update state</button>
             </div>
         )
     }

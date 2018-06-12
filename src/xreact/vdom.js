@@ -6,7 +6,7 @@ import { COM_LIFE_CYCLE } from './component'
 
 function instanceProps (componentVnode) {
     return {
-        oldState: componentVnode._instance.state,
+        oldState: componentVnode._instance.baseState,
         oldProps: componentVnode._instance.props,
         oldVnode: componentVnode._instance.Vnode
     }
@@ -127,6 +127,7 @@ function mountComponent (Vnode, container) {
         });
         instance._pendingState = [];
         instance.state = newState;
+        instance.baseState = newState;
     }
 
     let renderedVnode = instance.render();
@@ -393,6 +394,7 @@ function updateComponent (oldComponentVnode, newComponentVnode, parentDom) {
 
     oldComponentVnode._instance.props = newProps;
     oldComponentVnode._instance.state = newState;
+    oldComponentVnode._instance.baseState = newState;
     let newVnode = oldComponentVnode._instance.render();
     newVnode = newVnode || new VnodeClass('#text', '', null, null);
     const newVnodeType = typeNumber(newVnode);

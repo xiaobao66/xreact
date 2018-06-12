@@ -21,6 +21,7 @@ class ReactClass {
 
         // 用于更新
         this.nextState = null;
+        this.baseState = this.state;
         this.lifeCycle = COM_LIFE_CYCLE.CREATE;
         this.stateMergeQueue = [];
         this._pendingState = [];
@@ -28,10 +29,10 @@ class ReactClass {
     }
 
     updateComponent () {
-        const prevState = this.state;
+        const prevState = this.baseState;
         const oldVnode = this.Vnode;
 
-        this.nextState = this.state;
+        this.nextState = this.baseState;
 
         for (let index = 0; index < this._pendingState.length; index++) {
             const item = this._pendingState[index];
@@ -44,7 +45,8 @@ class ReactClass {
         }
 
         if (this.nextState !== prevState) {
-            this.state = this.nextState
+            this.state = this.nextState;
+            this.baseState = this.nextState
         }
 
         // 如果自定义了shouldComponentUpdate，则判断是否要更新
@@ -83,7 +85,7 @@ class ReactClass {
 
     _updateInLifeCycle () {
         if (this.stateMergeQueue.length > 0) {
-            let tempState = this.state;
+            let tempState = this.baseState;
             this._pendingState.forEach(item => {
                 tempState = Object.assign({}, tempState, ...item.partialNewState)
             });
