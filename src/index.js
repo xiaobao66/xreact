@@ -102,6 +102,14 @@ class App extends React.Component {
         // })
     }
 
+    shouldComponentUpdate(nextProps, nextState) {
+        if (nextState.change) {
+            return false
+        } else {
+            return true
+        }
+    }
+
     componentWillUpdate () {
         console.log('componentWillUpdate')
     }

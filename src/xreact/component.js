@@ -47,6 +47,16 @@ class ReactClass {
             this.state = this.nextState
         }
 
+        // 如果自定义了shouldComponentUpdate，则判断是否要更新
+        if (this.shouldComponentUpdate) {
+            const shouldUpdate = this.shouldComponentUpdate(this.props, this.nextState);
+            if (!shouldUpdate) {
+                // 清空更新队列
+                this._pendingState = [];
+                return
+            }
+        }
+
         if (this.componentWillUpdate) {
             this.componentWillUpdate(this.props, this.nextState)
         }
@@ -92,14 +102,6 @@ class ReactClass {
             partialNewState,
             callback
         });
-
-        // 如果自定义了shouldComponentUpdate，则判断是否要更新
-        if (this.shouldComponentUpdate) {
-            const shouldUpdate = this.shouldComponentUpdate(this.props, this.nextState);
-            if (!shouldUpdate) {
-                return
-            }
-        }
 
         if (this.lifeCycle === COM_LIFE_CYCLE.CREATE) {
             // 组件创建期不做处理
