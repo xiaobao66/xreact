@@ -113,7 +113,7 @@ function mountComponent (Vnode, container) {
 
     // 生命周期
     if (instance.componentWillMount) {
-        instance.componentWillMount()
+        instance.componentWillMount();
         let newState = instance.state;
         instance._pendingState.forEach(partialState => {
             if (typeNumber(partialState.partialNewState) === 5) {
@@ -125,6 +125,7 @@ function mountComponent (Vnode, container) {
                 }
             }
         });
+        instance._pendingState = [];
         instance.state = newState;
     }
 
@@ -374,6 +375,7 @@ function updateComponent (oldComponentVnode, newComponentVnode, parentDom) {
                 }
             }
         });
+        oldComponentVnode._instance._pendingState = [];
     }
 
     oldComponentVnode._instance.lifeCycle = COM_LIFE_CYCLE.UPDATING;
